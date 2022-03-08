@@ -1,0 +1,37 @@
+service: nmo-talonOne-promotions-sls
+
+frameworkVersion: "3"
+
+custom:
+  promoS3Bucket: "icc"
+  promoEventBus: "nmo-talon-one-promotions-${sls:stage}"
+  iccAccountRole: "arn:aws:iam::024601443990:root"
+  nmoTalonOnePromotionsLabel: "nmo-talon-one-promotions-${sls:stage}"
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  iam:
+    role:
+      name: ${self:custom.nmoTalonOnePromotionsLabel}-lambda-${sls:stage}-role
+
+package:
+  patterns:
+    - "!./**"
+    - src/**
+
+configValidationMode: error
+
+functions:
+  nmoTalonOnePromotionsConsume:
+    name: ${self:custom.nmoTalonOnePromotionsLabel}-consume
+    handler: src/handler.index
+    memorySize: 1000
+    timeout: 600
+    description: "Lambda to consume talon one promotion messages"
+
+resources: ${file(./template.yml)}
+
+plugins:
+  - serverless-offline
+  - serverless-offline-aws-eventbridge

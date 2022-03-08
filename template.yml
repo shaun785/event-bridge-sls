@@ -1,0 +1,56 @@
+Resources:
+  nmoTalonOnePromotionsEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: ${self:custom.promoEventBus}
+  nmoTalonOnePromotionsEventBusPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      EventBusName: ${self:custom.promoEventBus}
+      StatementId: "NmoTalonOnePromotionEventBusPolicy"
+      Statement:
+        Effect: "Allow"
+        Principal:
+          AWS: ${self:custom.iccAccountRole}
+        Action: "events:PutEvents"
+        Resource: !GetAtt nmoTalonOnePromotionsEventBus.Arn
+  nmoTalonOnePromotionsHCEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: ${self:custom.nmoTalonOnePromotionsLabel}-HC-rule
+      EventBusName: !GetAtt nmoTalonOnePromotionsEventBus.Arn
+      EventPattern:
+        source:
+          - aws.s3
+        detail:
+          eventSource:
+            - s3.amazonaws.com
+          eventName:
+            - "PutObject"
+          requestParameters:
+            bucketName:
+              - ${self:custom.promoS3Bucket}
+            key:
+              - prefix: responses/HC
+      Targets:
+        - Arn: !GetAtt NmoTalonOnePromotionsConsumeLambdaFunction.Arn
+          Id: "NmoTaloneOnePromotionConsumeTargetFunction"
+Outputs:
+  nmoTalonOnePromotionsEventBus:
+    Description: "Talon One EventBus Arn"
+    Export:
+      Name: EventBusArn
+    Value: !GetAtt nmoTalonOnePromotionsEventBus.Arn
+  nmoTalonOnePromotionsEventBusPolicy:
+    Description: "Talon One EventBus Policy Arn"
+    Export:
+      Name: EventBusPolicyArn
+    Value: !Ref nmoTalonOnePromotionsEventBusPolicy
+  nmoTalonOnePromotionsHCEventRule:
+    Description: "Talon One EventBus Rule Arn"
+    Export:
+      Name: EventBusRuleArn
+    Value: !GetAtt nmoTalonOnePromotionsHCEventRule.Arn
+  nmoTalonOnePromotionssLambdaExecutionRole:
+    Description: "Talon One Lambda Role"
+    Value: !Sub arn:aws:iam::${AWS::AccountId}:role/${self:provider.iam.role.name}
